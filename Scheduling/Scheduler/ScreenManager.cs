@@ -19,28 +19,49 @@ using VRageMath;
 
 namespace IngameScript
 {
+    /// <summary>Any object that implements this interface can be used by the screen manager as an output provider.</summary>
     interface IHasOutput
     {
+        /// <summary>Human-readable string identifying the output provider.</summary>
         string ID { get; }
+        /// <summary>Tries to convert a string into a provider-defined data object describing the output (settings, sprite cache, etc).</summary>
+        /// <param name="mode">Input string</param>
+        /// <param name="data">Output data object. Using structs is not recommended due to boxing.</param>
+        /// <returns>True if parsing succeeded.</returns>
         bool TryParseMode(string mode, out object data);
+        /// <summary>
+        /// Converts a provider-defined data object to a string representation that can be used by TryParseMode().
+        /// </summary>
+        /// <param name="data">Data object to serialize.</param>
+        /// <returns>String representation.</returns>
         string SerializeMode(object data);
+        /// <summary>Renders sprites for the specified window and uses given DrawFrame to display them.</summary>
+        /// <param name="window">Window object defining surface, area of interest, data object, etc.</param>
+        /// <param name="text">Text representation of the content can be added here for ease of copying.</param>
+        /// <param name="frame">DrawFrame object to display the sprites with.</param>
         void Render(Window window, StringBuilder text, ref MySpriteDrawFrame frame);
     }
-
+    /// <summary>Defines an output area on an IMyTextSurface that can be used by an output provider.</summary>
     class Window
     {
+        /// <summary>Surface to be used for output.</summary>
         public readonly IMyTextSurface Surface;
+        /// <summary>Area of the surface that should be used by this window.</summary>
         public RectangleF Area { get { return Location.Area; } }
+        /// <summary>Location of this window - block, surface id, area.</summary>
         public WindowLocation Location;
+        /// <summary>Provider-defined data object describing the contents of the window.</summary>
         public object Data;
+        /// <summary>Output provider associated with this window.</summary>
         public readonly IHasOutput Job;
+        /// <summary>Constructor - only to be used by screen manager.</summary>
         public Window(WindowLocation loc, IMyTextSurface surface, object data, IHasOutput job)
         {
             Location = loc; Surface = surface; Data = data; Job = job;
         }
         public T GetData<T>() where T : class { return Data as T; }
     }
-
+    /// <summary>Describes a location of a window: block, surface id, area.</summary>
     struct WindowLocation
     {
         public long BlockId;
@@ -67,7 +88,9 @@ namespace IngameScript
             return $"{BlockId}/{SurfaceId}/{Area.Position.X}/{Area.Position.Y}/{Area.Size.X}/{Area.Size.Y}";
         }
     }
-
+    /// <summary>
+    /// Manages output providers and their associated windows.
+    /// </summary>
     class ScreenManager
     {
         public string ID = "Screen";
@@ -75,6 +98,7 @@ namespace IngameScript
         public ScreenManager(Scheduler owner)
         {
             Owner = owner;
+            Owner.BlockFound += TryAttachScreen;
             Owner.Loading += Load;
             Owner.Saving += Save;
             Owner.RegisterCommand(ID, Command);
@@ -89,7 +113,7 @@ namespace IngameScript
   jobs - list available job IDs.
 ";
         public static ScreenManager operator+(ScreenManager manager, IHasOutput job)
-        {
+        {   //Just a shorthand to associate a provider with a manager instance.
             manager.Jobs.Add(job.ID, job);
             return manager;
         }
@@ -100,7 +124,7 @@ namespace IngameScript
             {
                 case "help": Owner.Log(Help); break;
                 case "add":
-                    {
+                    {   //add command lets you put a window onto a screen
                         string surfaddr = cmd.Items[2];
                         string areacoords = cmd.Items[3];
                         string jobid = cmd.Items[4];
@@ -118,7 +142,7 @@ namespace IngameScript
                             AddWindow(block as IMyTextSurfaceProvider, surfidx, area, Jobs[jobid], mode);
                     }; break;
                 case "set":
-                    {
+                    {   //set command replaces content of the screen with a window
                         string surfaddr = cmd.Items[2];
                         string jobid = cmd.Items[3];
                         string mode = cmd.Items[4];
@@ -132,7 +156,7 @@ namespace IngameScript
                             SetScreen(block as IMyTextSurfaceProvider, surfidx, Jobs[jobid], mode);
                     }; break;
                 case "clear":
-                    {
+                    {   //clear command removes windows in certain area (or clears entire screen)
                         string surfaddr = cmd.Items[2];
                         string areacoords = cmd.Items[3];
                         IMyTerminalBlock block;
@@ -154,7 +178,7 @@ namespace IngameScript
         #region Save/Load state
         List<MyTuple<WindowLocation, string, string>> PendingScreens = new List<MyTuple<WindowLocation, string, string>>();
         void Save(MyIni state)
-        {
+        {   //serialize each window, storing its location, provider ID and data object representation
             foreach (var ws in Screens.Values)
                 foreach (Window w in ws)
                     state.Set(ID, w.Location.ToString(), w.Job.ID + "\n" + w.Job.SerializeMode(w.Data));
@@ -164,9 +188,10 @@ namespace IngameScript
             WindowLocation loc;
             List<MyIniKey> keys = new List<MyIniKey>();
             state.GetKeys(ID, keys);
+            PendingScreens.Clear();
             foreach (var key in keys)
                 if (WindowLocation.TryParse(key.Name, out loc))
-                {
+                {   //we store a would-be window into a buffer - we will create it once we find that text surface again.
                     string value = state.Get(key).ToString();
                     int idx = value.IndexOf('\n');
                     if (idx < 0)
@@ -174,40 +199,37 @@ namespace IngameScript
                     else
                         PendingScreens.Add(new MyTuple<WindowLocation, string, string>(loc, value.Substring(0, idx), value.Substring(idx + 1)));
                 }
-            Owner.BlockFound += TryAttachScreen;
         }
         void TryAttachScreen(GridScanArgs<IMyTerminalBlock> item)
-        {
+        {   //Check if we found a surface provider block that was used by one of our windows.
             if (item.First)
             {
                 Owner.Tick10 -= ScreenUpdateTick;
             }
             var p = item.Item as IMyTextSurfaceProvider;
             if (p != null)
-            {
                 for (int i = PendingScreens.Count - 1; i >= 0; i--)
                     if (PendingScreens[i].Item1.BlockId == item.Item.EntityId)
-                    {
+                    {   //found a matching block!
                         object data;
                         IHasOutput job;
-                        if ((PendingScreens[i].Item1.SurfaceId <= p.SurfaceCount)
-                            && Jobs.TryGetValue(PendingScreens[i].Item2, out job)
-                            && job.TryParseMode(PendingScreens[i].Item3, out data))
+                        if ((PendingScreens[i].Item1.SurfaceId <= p.SurfaceCount) //found a matching surface
+                            && Jobs.TryGetValue(PendingScreens[i].Item2, out job) //found an output provider
+                            && job.TryParseMode(PendingScreens[i].Item3, out data)) //managed to restore its data object
                         {
                             var surface = p.GetSurface(PendingScreens[i].Item1.SurfaceId);
-                            if (!Screens.ContainsKey(surface))
+                            if (!Screens.ContainsKey(surface)) //add to active screens if necessary
                                 Screens[surface] = new List<Window>();
                             Screens[surface].Add(new Window(PendingScreens[i].Item1, surface, data, job));
                         }
                         PendingScreens.RemoveAt(i);
                     }
-            }
             if (item.Last)
             {
-                PendingScreens.Clear();
+                PendingScreens.Clear(); //we forget any windows we couldn't restore
                 Updater.Dispose();
                 Updater = Screens.GetEnumerator();
-                Owner.BlockFound -= TryAttachScreen;
+                Owner.BlockFound -= TryAttachScreen; //as such, we won't need scanning the grid again
                 Owner.Tick10 += ScreenUpdateTick;
             }
         }
@@ -215,6 +237,13 @@ namespace IngameScript
         #region Screen/window control
         Dictionary<IMyTextSurface, List<Window>> Screens = new Dictionary<IMyTextSurface, List<Window>>();
         Dictionary<IMyTextSurface, List<Window>>.Enumerator Updater;
+        /// <summary>Adds an output window to a specific screen surface. Does not affect other windows.</summary>
+        /// <param name="block">Block that provides the surface</param>
+        /// <param name="surf">Surface number</param>
+        /// <param name="area">Area for the window to take up.</param>
+        /// <param name="job">Output provider that will use this window.</param>
+        /// <param name="mode">String describing the contents of the window (provider-defined).</param>
+        /// <returns>Window object.</returns>
         public Window AddWindow(IMyTextSurfaceProvider block, int surf, RectangleF area, IHasOutput job, string mode)
         {
             object data;
@@ -238,12 +267,20 @@ namespace IngameScript
             }
             return null;
         }
-        public void SetScreen(IMyTextSurfaceProvider block, int surf, IHasOutput job, string mode)
+        /// <summary>Replaces contents of a specific screen with an output window.</summary>
+        /// <param name="block">Block that provides the surface</param>
+        /// <param name="surf">Surface number</param>
+        /// <param name="job">Output provider that will use this window.</param>
+        /// <param name="mode">String describing the contents of the window (provider-defined).</param>
+        /// <returns>Window object.</returns>
+        public Window SetScreen(IMyTextSurfaceProvider block, int surf, IHasOutput job, string mode)
         {
             RectangleF area = new RectangleF(0, 0, 1, 1);
             ClearScreen(block as IMyTextSurfaceProvider, surf);
-            AddWindow(block as IMyTextSurfaceProvider, surf, area, job, mode);
+            return AddWindow(block as IMyTextSurfaceProvider, surf, area, job, mode);
         }
+        /// <summary>Removes specific window from whatever screen it's at the moment.</summary>
+        /// <param name="w">Window to close.</param>
         public void RemoveWindow(Window w)
         {
             foreach (var kv in Screens)
@@ -255,6 +292,10 @@ namespace IngameScript
                     break;
                 }
         }
+        /// <summary>Removes all windows that intersect specific area on the given surface.</summary>
+        /// <param name="block">Block that provides the surface</param>
+        /// <param name="surf">Surface number</param>
+        /// <param name="area">Any window that intersects this area will be removed.</param>
         public void RemoveWindowsIn(IMyTextSurfaceProvider block, int surf, RectangleF area)
         {
             RectangleF intersect;
@@ -273,6 +314,8 @@ namespace IngameScript
                 }
             }
         }
+        /// <summary>Removes all windows that belong to a specific output provider.</summary>
+        /// <param name="job"></param>
         public void RemoveWindowsFor(IHasOutput job)
         {
             var keys = Screens.Keys.ToArray();
@@ -283,6 +326,11 @@ namespace IngameScript
                 if (ws.Count == 0) ClearScreen(key);
             }
         }
+        /// <summary>
+        /// Clears specified surface if it exists.
+        /// </summary>
+        /// <param name="block">Block that provides the surface</param>
+        /// <param name="surf">Surface ID</param>
         public void ClearScreen(IMyTextSurfaceProvider block, int surf)
         {
             if (surf >= block.SurfaceCount)
@@ -302,6 +350,11 @@ namespace IngameScript
         }
         #endregion
         #region Screen updates
+        /// <summary>
+        /// Immediately redraws all screens that have windows belonging to the given output provider.<para/>
+        /// Warning: not only this provider's windows will be redrawn!
+        /// </summary>
+        /// <param name="job"></param>
         public void ForceUpdateFor(IHasOutput job)
         {
             foreach (var kv in Screens)
@@ -312,7 +365,7 @@ namespace IngameScript
         StringBuilder TextBuffer = new StringBuilder();
         int UpdTick = 0;
         void ScreenUpdateTick(UpdateFrequency freq)
-        {
+        {   //one screen is updated every 10 ticks, but any screen is updated not faster than every 100 ticks
             if (Updater.MoveNext())
                 UpdateScreen(Updater.Current.Key, Updater.Current.Value);
             else if (UpdTick >= 10)
@@ -343,7 +396,7 @@ namespace IngameScript
         #endregion
         #region Screen/window description and location
         static bool LookupSurface(string addr, IMyGridTerminalSystem gts, out IMyTerminalBlock block, out int surfid)
-        {
+        {   //finds a block and a surface that correspond to the given address string
             long blockid;
             block = null;
             surfid = 0;
@@ -359,7 +412,7 @@ namespace IngameScript
             return (sepidx == addr.Length) || int.TryParse(addr.Substring(sepidx + 1), out surfid);
         }
         static bool ReadArea(string s, out RectangleF area)
-        {
+        {   //parses an area definition string into a RectangleF
             if (string.IsNullOrWhiteSpace(s))
             {
                 area = new RectangleF(0, 0, 1, 1);

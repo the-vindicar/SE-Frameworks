@@ -56,8 +56,6 @@ namespace IngameScript
                 if ((source & (UpdateType.Terminal | UpdateType.Script | UpdateType.Trigger)) != 0)
                     ExecuteCommand(argument);
                 PB.Runtime.UpdateFrequency = updateFrequency;
-                if (Debug != null)
-                    ShowDebugInfo();
             }
             catch (Exception e)
             {
@@ -77,46 +75,6 @@ namespace IngameScript
         /// </summary>
         public event Action<Exception> Fault;
 
-        #region Debug
-        public IMyTextSurface Debug = null;
-        StringBuilder DebugInfo = null;
-        double[] BinRuntime = new double[10];
-        void ShowDebugInfo()
-        {
-            if (DebugInfo == null) DebugInfo = new StringBuilder();
-            Debug.ContentType = ContentType.TEXT_AND_IMAGE;
-            DebugInfo.Clear();
-            double run = PB.Runtime.LastRunTimeMs;
-            BinRuntime[(StaggerIndex + 9) % 10] = run;
-            DebugInfo.Append($"Last run: {run}ms\n");
-            DebugInfo.Append("Update1:   ");
-            if (OnTick1 != null)
-                foreach (var d in OnTick1.GetInvocationList())
-                    DebugInfo.Append(d.Target.GetType().Name).Append(' ');
-            DebugInfo.Append('\n');
-            DebugInfo.Append("Update10:  ");
-            if (OnTick10 != null)
-                foreach (var d in OnTick10.GetInvocationList())
-                    DebugInfo.Append(d.Target.GetType().Name).Append(' ');
-            DebugInfo.Append('\n');
-            DebugInfo.Append("Update100: ");
-            if (OnTick100 != null)
-                foreach (var d in OnTick100.GetInvocationList())
-                    DebugInfo.Append(d.Target.GetType().Name).Append(' ');
-            DebugInfo.Append('\n');
-            for (int i = 0; i < 10; i++)
-            {
-                DebugInfo.Append("Bin #").Append(i).Append(": ");
-                DebugInfo.AppendFormat("{0,6}ms ", BinRuntime[i]);
-                if (StaggerBins[i] != null)
-                    foreach (var d in StaggerBins[i])
-                        DebugInfo.Append(d.Target.GetType().Name).Append(' ');
-                DebugInfo.Append('\n');
-            }
-            DebugInfo.Append('\n');
-            Debug.WriteText(DebugInfo, false);
-        }
-        #endregion
         void FirstTickRun(UpdateFrequency freq)
         {   //runs at the first tick (but after Program() constructor finishes)
             LoadState(); //Notify jobs that saved state is available
