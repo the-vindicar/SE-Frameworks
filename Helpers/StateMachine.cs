@@ -19,11 +19,29 @@ using VRageMath;
 
 namespace IngameScript
 {
+    /// <summary>
+    /// Coroutine-based state machine. 
+    /// Each state must be a method with the following signature:
+    /// <para>IEnumerable&lt;string&gt; State()</para>
+    /// <para>On each iteration, state method should do one of the following:</para>
+    /// <para>a) yield return null in order to pause execution while keeping the state,</para>
+    /// <para>b) yield return the name of the next state to change the state,</para>
+    /// <para>c) yield break to stop the state machine (final state).</para>
+    /// </summary>
     class StateMachine
     {
         public delegate IEnumerable<string> State();
+        /// <summary>Event is triggered every time the state changes.</summary>
         public event Action<string> StateChanged;
+        /// <summary>
+        /// Collection of available states. 
+        /// Keys are state names that should be yield'ed by the state coroutines.
+        /// </summary>
         public IDictionary<string, State> States = new Dictionary<string, State>();
+        /// <summary>
+        /// Controls current state of the state machine. On assignment, state changes immediately.
+        /// <para>Warning: assigning the same value will cause current state coroutine to restart.</para>
+        /// </summary>
         public string CurrentState
         {
             get { return stateName; }
@@ -35,6 +53,11 @@ namespace IngameScript
                 StateChanged?.Invoke(stateName);
             }
         }
+        /// <summary>
+        /// Allows current state coroutine to do a portion of work and switch over if needed.
+        /// <para>Returns true if machine continues operation, false if it has reached the final state.</para>
+        /// </summary>
+        /// <returns></returns>
         public bool Update()
         {
             if (stateRunner == null)

@@ -21,6 +21,14 @@ namespace IngameScript
 {
     public static class InventoryHelper
     {
+        /// <summary>
+        /// Attempts to move certain item type from one inventory to another.
+        /// </summary>
+        /// <param name="from">Source inventory.</param>
+        /// <param name="to">Destination inventory.</param>
+        /// <param name="type">Item type to move.</param>
+        /// <param name="amount">How much to move. If not specified, attempts to move every item of set type.</param>
+        /// <returns>The amount actually moved.</returns>
         public static MyFixedPoint MoveItem(IMyInventory from, IMyInventory to, MyItemType type, MyFixedPoint? amount = null)
         {
             MyFixedPoint amountmoved = new MyFixedPoint();
@@ -42,7 +50,11 @@ namespace IngameScript
             }
             return amountmoved;
         }
-
+        /// <summary>
+        /// Attempts to equalize the amounts of certain item between connected inventories.
+        /// </summary>
+        /// <param name="invs">Collection of inventories to equalize.</param>
+        /// <param name="type">Item to transfer.</param>
         public static void EqualizeItemCount(IList<IMyInventory> invs, MyItemType type)
         {
             var info = type.GetItemInfo();

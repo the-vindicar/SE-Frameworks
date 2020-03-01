@@ -21,7 +21,9 @@ namespace IngameScript
 {
     static class BlockExtensions
     {
+        /// <summary>Checks if the block still actually exists.</summary>
         public static bool IsAlive(this IMyTerminalBlock block) { return block.WorldMatrix != MatrixD.Identity; }
+        /// <summary>Returns given block's size in meters.</summary>
         public static Vector3D RealSize(this IMyCubeBlock block) { return (Vector3D)(block.Max - block.Min + Vector3I.One) * block.CubeGrid.GridSize; }
     }
 }
