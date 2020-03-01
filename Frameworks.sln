@@ -1,0 +1,27 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.645
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Communication", "Communication\Communication.shproj", "{2B338D68-00F7-46D9-A3D7-5F5E51B141EA}"
+EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "PilotingLib", "PilotingLib\PilotingLib.shproj", "{A4C34238-B560-4EB3-ADEF-016FEFF61FCF}"
+EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Helpers", "Helpers\Helpers.shproj", "{648F583F-AD8F-405F-B9AE-FD6BD124B150}"
+EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Scheduling", "Scheduling\Scheduling.shproj", "{840901E4-2256-40D7-BEB4-0982039A397E}"
+EndProject
+Global
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		Communication\Communication.projitems*{2b338d68-00f7-46d9-a3d7-5f5e51b141ea}*SharedItemsImports = 13
+		Helpers\Helpers.projitems*{648f583f-ad8f-405f-b9ae-fd6bd124b150}*SharedItemsImports = 13
+		Scheduling\Scheduling.projitems*{840901e4-2256-40d7-beb4-0982039a397e}*SharedItemsImports = 13
+		PilotingLib\PilotingLib.projitems*{a4c34238-b560-4eb3-adef-016feff61fcf}*SharedItemsImports = 13
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {1FD55C3B-F663-4273-A5BF-52CAA41C56B5}
+	EndGlobalSection
+EndGlobal

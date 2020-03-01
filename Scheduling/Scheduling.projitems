@@ -1,0 +1,29 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>840901e4-2256-40d7-beb4-0982039a397e</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>Scheduling</Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)Jobs\JobDoorControl.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Jobs\JobSmartAirlock.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Jobs\JobCapacityMonitor.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Jobs\JobSolarSimple.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Scheduler\GridScanAuxiliaries.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Jobs\JobBattery.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Jobs\JobPowerMonitor.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Jobs\JobInventory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Jobs\JobProductionMonitor.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Jobs\JobStockUpkeep.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Scheduler\ProgramMixIn.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Jobs\JobInventoryMonitor.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Jobs\JobLogger.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Scheduler\MiscAuxiliaries.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Scheduler\Scheduler.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Scheduler\ScreenManager.cs" />
+  </ItemGroup>
+</Project>

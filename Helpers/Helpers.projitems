@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>648f583f-ad8f-405f-b9ae-fd6bd124b150</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>Helpers</Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)BlockExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)InventoryHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)PID.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)StateMachine.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)TextSurfaceExtensions.cs" />
+  </ItemGroup>
+</Project>
