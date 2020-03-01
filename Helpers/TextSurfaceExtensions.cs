@@ -191,7 +191,7 @@ namespace IngameScript
             Vector2 size1 = surface.MeasureStringInPixels(text, font, 1);
             float scale = Math.Min(size.X / size1.X, size.Y / size1.Y);
             pos.Y -= size1.Y * scale / 2;
-            return new MySprite(SpriteType.TEXT, text, pos, null, color, font, align, scale);
+            return new MySprite(SpriteType.TEXT, text.ToString(), pos, null, color, font, align, scale);
         }
         /// <summary>Creates a text sprite scaled to fit into specified area.</summary>
         /// <param name="surface"></param>

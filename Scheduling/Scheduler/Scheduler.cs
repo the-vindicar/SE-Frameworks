@@ -19,9 +19,12 @@ using VRageMath;
 
 namespace IngameScript
 {
+    /// <summary>This class provides an event-driven programming interface for job objects to use.</summary>
     class Scheduler
     {
         public readonly Program PB;
+        /// <summary>Creates an instance of the scheduler.</summary>
+        /// <param name="program">Program instance to link to.</param>
         public Scheduler(Program program)
         {
             updateFrequency = UpdateFrequency.None;
@@ -32,6 +35,8 @@ namespace IngameScript
             RegisterCommand("scangrid", ScanGrid);
             Once += FirstTickRun;
             PB.Runtime.UpdateFrequency = updateFrequency;
+            for (int i = StaggerBins.Length - 1; i >= 0; i--)
+                StaggerBins[i] = new List<Action<UpdateFrequency>>();
         }
         /// <summary>Main tick method. Call it from Program.Main().</summary>
         public void Update(string argument, UpdateType source)
@@ -60,7 +65,11 @@ namespace IngameScript
                 throw;
             }
         }
-        /// <summary>Use this action to write a line to the system log, or subscribe to it to handle logging yourself.</summary>
+        /// <summary>
+        /// Use this action to write a line to the system log, 
+        /// or subscribe to it to handle logging yourself.
+        /// By default Echo() is used.
+        /// </summary>
         public Action<string> Log;
         /// <summary>
         /// Triggered if an unhandled exception occurs during execution, and PB is about to halt.
@@ -100,7 +109,7 @@ namespace IngameScript
                 DebugInfo.Append("Bin #").Append(i).Append(": ");
                 DebugInfo.AppendFormat("{0,6}ms ", BinRuntime[i]);
                 if (StaggerBins[i] != null)
-                    foreach (var d in StaggerBins[i].GetInvocationList())
+                    foreach (var d in StaggerBins[i])
                         DebugInfo.Append(d.Target.GetType().Name).Append(' ');
                 DebugInfo.Append('\n');
             }
@@ -134,17 +143,18 @@ namespace IngameScript
         /// Notifies all subscribed jobs that they need to save their state. Should be called by Program.Save().
         /// <para>Warning: state is saved into a single shared <see cref="MyIniFile"/>.</para>
         /// </summary>
+        bool DoSave = true;
         public void SaveState()
         {
             SavedState.Clear();
-            Saving?.Invoke(SavedState);
+            if (DoSave) Saving?.Invoke(SavedState);
             PB.SetStorage(SavedState.ToString()); //using mix-in method
         }
         /// <summary>If called, block state won't be saved on next shutdown.</summary>
         public void Reset(MyCommandLine cmd)
         {
-            Saving = null;
-            Log("Full reset scheduled.");
+            DoSave = false;
+            Log("State reset scheduled.");
         }
         #endregion
         #region Blocks & groups
@@ -152,8 +162,12 @@ namespace IngameScript
         public event Action<GridScanArgs<KeyValuePair<IMyBlockGroup, List<IMyTerminalBlock>>>> GroupFound;
         /// <summary>Triggered every time grid scan returns a terminal block.</summary>
         public event Action<GridScanArgs<IMyTerminalBlock>> BlockFound;
+        /// <summary>Groups found during last scan and their corresponding blocks.</summary>
         public IReadOnlyDictionary<IMyBlockGroup, IReadOnlyList<IMyTerminalBlock>> Groups;
-        /// <summary>Schedule a grid scan. This version can be registered as a command.</summary>
+        /// <summary>
+        /// Schedule a grid scan. It will happen over the course of several next ticks, depending on how large the grid is. <para/>
+        /// This version can be registered as a command, and will cause a message "Grid scan complete" to be logged.
+        /// </summary>
         public void ScanGrid(MyCommandLine args)
         {
             if (GroupFeed == null || BlockFeed == null)
@@ -175,7 +189,7 @@ namespace IngameScript
         public void ScanGrid()
         {
             if (GroupFeed != null || BlockFeed != null)
-                return; //grid scan in progress, ignore
+                return; //grid scan already in progress, ignore
             GroupList.Clear();
             PB.GridTerminalSystem.GetBlockGroups(GroupList);
             GroupFeed = FeedList(GroupList, GroupScanTick).GetEnumerator();
@@ -344,28 +358,38 @@ namespace IngameScript
         }
         #endregion
         #region Staggered ticks
-        int StaggerBinIndex = 0;
         int StaggerIndex = 0;
-        Action<UpdateFrequency>[] StaggerBins = new Action<UpdateFrequency>[10];
+        List<Action<UpdateFrequency>>[] StaggerBins = new List<Action<UpdateFrequency>>[10];
+        /// <summary>
+        /// Subscribing to this event will cause the handler to run approximately every 100 ticks.
+        /// But different handlers will be triggered during different 10-tick intervals.<para/>
+        /// Warning: this event uses Update10 frequency.
+        /// </summary>
         public event Action<UpdateFrequency> Tick100S
         {
             add
             {
-                bool was_empty = StaggerBins.All((b) => b == null);
-                StaggerBins[StaggerBinIndex] += value;
-                StaggerBinIndex = (StaggerBinIndex + 1) % StaggerBins.Length;
+                bool was_empty = StaggerBins.All((b) => b.Count == 0);
+                int minidx = 0; //find least used interval
+                for (int i = StaggerBins.Length - 1; i > 0; i--)
+                    if (StaggerBins[i].Count < StaggerBins[minidx].Count)
+                        minidx = i;
+                StaggerBins[minidx].Add(value);
                 if (was_empty) Tick10 += DoTick100S;
             }
             remove
             {
-                for (int i = StaggerBins.Length - 1; i >= 0; i--) StaggerBins[i] -= value;
-                if (StaggerBins.All((b) => b == null)) Tick10 -= DoTick100S;
+                for (int i = StaggerBins.Length - 1; i >= 0; i--)
+                    if (StaggerBins[i].Remove(value))
+                        return;
+                if (StaggerBins.All((b) => b.Count == 0)) Tick10 -= DoTick100S;
             }
         }
 
         void DoTick100S(UpdateFrequency freq)
         {
-            StaggerBins[StaggerIndex]?.Invoke(freq);
+            foreach (var h in StaggerBins[StaggerIndex])
+                h(UpdateFrequency.Update100);
             StaggerIndex = (StaggerIndex + 1) % StaggerBins.Length;
         }
         #endregion
@@ -395,6 +419,5 @@ namespace IngameScript
                 Log($"Invalid command");
         }
         #endregion
-
     }
 }

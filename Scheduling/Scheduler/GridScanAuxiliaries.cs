@@ -49,11 +49,11 @@ namespace IngameScript
             /// <summary>Only accept blocks belonging to a group with name containing specific substring.</summary>
             GroupTag = 8,
             /// <summary>Only accept blocks on the same grid.</summary>
-            SameGrid = 32,
+            SameGrid = 16,
             /// <summary>Only accept blocks on the same construct.</summary>
-            SameConstruct = 64,
+            SameConstruct = 32,
             /// <summary>Only accept blocs with the same owner.</summary>
-            SameOwner = 128
+            SameOwner = 64
         };
         #endregion
         /// <summary>General type of the policy.</summary>
@@ -62,14 +62,25 @@ namespace IngameScript
         public readonly string Name;
         public GridPolicy(Types type, string name = null)
         {
-            byte v = (byte)(type & (Types.BlockName | Types.BlockTag | Types.GroupName));
+            byte v = (byte)(type & (Types.BlockName | Types.BlockTag | Types.GroupName | Types.GroupTag));
             if ((v & (v - 1)) != 0) //ensure no more than one of those flags is set
-                throw new ArgumentException("Can't combine BlockName, BlockTag and GroupName");
+                throw new ArgumentException("Can't combine BlockName, BlockTag, GroupName or GroupTag");
             if (v != 0 && string.IsNullOrEmpty(name))
-                throw new ArgumentException("You need to specify a name when using BlockName, BlockTag or GroupName");
+                throw new ArgumentException("You need to specify a name when using BlockName, BlockTag, GroupName or GroupTag");
             Type = type;
             Name = (v != 0) ? name : null;
         }
+        /// <summary>
+        /// Attempts to parse a string into a policy descriptor. Format examples:<para/>
+        /// Any - accept any blocks available to PB<para/>
+        /// SameGrid - only accept blocks on the same grid as PB<para/>
+        /// SameConstruct|GroupName:TheGroup - accept blocks on the same construct that are a part of the group named "TheGroup"<para/>
+        /// SameConstruct|SameOwner - accept blocks on the same construct that have same owner as PB<para/>
+        /// SameConstruct|BlockTag:Name Tag - accept blocks on the same construct that have "Name Tag" in their CustomName.<para/>
+        /// </summary>
+        /// <param name="data">Input string.</param>
+        /// <param name="policy">Policy object.</param>
+        /// <returns>True if parsing was successful.</returns>
         public static bool TryParse(string data, out GridPolicy policy)
         {
             policy = new GridPolicy();
@@ -96,6 +107,9 @@ namespace IngameScript
             policy = new GridPolicy(type, name);
             return true;
         }
+        /// <summary>Parses a string into a policy descriptor, or throws an ArgumentException.</summary>
+        /// <param name="data">Input string</param>
+        /// <returns>Policy object.</returns>
         public static GridPolicy Parse(string data)
         {
             GridPolicy p;
@@ -104,6 +118,8 @@ namespace IngameScript
             else
                 throw new ArgumentException($"'{data}' is not a valid policy descriptor.");
         }
+        /// <summary>Converts policy object to a string representation.</summary>
+        /// <returns></returns>
         public override string ToString()
         {
             StringBuilder builder = new StringBuilder();
