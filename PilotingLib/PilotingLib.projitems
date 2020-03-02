@@ -19,7 +19,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)FlyForwardStrategy.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)BasePilot.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Location.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Waypoint.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)RammingStrategy.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)RotationAid.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)UnaimedFlightStrategy.cs" />

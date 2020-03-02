@@ -54,7 +54,7 @@ namespace IngameScript
             Goal.Update(owner.elapsedTime);
             AimGoal.Update(owner.elapsedTime);
             Vector3D direction = Goal.Position - wm.Translation;
-            Vector3D facingdirection = AimGoal.Position - (wm.Translation + linearV * owner.elapsedTime.TotalSeconds);
+            Vector3D facingdirection = (AimGoal.Position + AimGoal.Velocity * owner.elapsedTime.TotalSeconds) - (wm.Translation + linearV * owner.elapsedTime.TotalSeconds);
             double distance = direction.Normalize();
             if (distance < Goal.Distance) //Are we too close to the goal?
             {   // yep! better back off.
