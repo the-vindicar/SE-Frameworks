@@ -99,7 +99,7 @@ namespace IngameScript
                 lastidx = idx + 2;
             }
             string name = (name_sep < 0) ? string.Empty : data.Substring(name_sep + 1);
-            byte v = (byte)(type & (Types.BlockName | Types.BlockTag | Types.GroupName));
+            byte v = (byte)(type & (Types.BlockName | Types.BlockTag | Types.GroupName | Types.GroupTag));
             //ensure no more than one of those flags is set
             //ensure if one of those flags is set, name is set too
             if (((v & (v - 1)) != 0) || (v != 0 && string.IsNullOrEmpty(name)))

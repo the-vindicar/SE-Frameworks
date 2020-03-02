@@ -9,8 +9,8 @@
     <Import_RootNamespace>PilotingLib</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(MSBuildThisFileDirectory)StrafingStrategy.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)AimedFlightStrategy.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)StrafingStrategy.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)AimingStrategy.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ArcStrategy.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)AutoPilot.cs" />

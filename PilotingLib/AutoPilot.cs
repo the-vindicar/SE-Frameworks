@@ -80,7 +80,7 @@ namespace IngameScript
             foreach (IMyThrust t in Thrusters)
                 if (t.IsWorking)
                 {
-                    double projection = t.WorldMatrix.GetDirectionVector(Base6Directions.Direction.Backward).Dot(direction);
+                    double projection = t.WorldMatrix.Backward.Dot(direction);
                     if (projection > 0)
                         thrust += t.MaxEffectiveThrust * projection;
                 }
